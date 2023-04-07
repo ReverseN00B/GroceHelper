@@ -1,29 +1,21 @@
-'''
-GroceryHelper
-Copyright (C) 2019 Nathan Weinberg
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-'''
 
 import json
 import datetime
 from flask import *
 from flask_mongoengine import MongoEngine
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config['MONGODB_SETTINGS'] = json.load(open("config.json", "r"))
 db = MongoEngine(app)
+CORS(app)
+
+class User(db.Document):
+	username = db.StringField(required=True, unique=True, max_length=100)
+	email = db.EmailField(required=True, max_length=100)
+	pwd = db.StringField(required=True, max_length=200)
+	
+
 
 class Recipe(db.Document):
 	name = db.StringField(required=True, unique=True, max_length=50)
@@ -67,6 +59,11 @@ class Product(db.Document):
 			return True
 		else:
 			return False
+
+
+# @app.route('/register', methods=['POST'])
+# def add_user():
+# 	json = 
 
 @app.route('/', methods=['GET'])
 def index():
@@ -129,9 +126,10 @@ def addProduct():
 	'''
 
 	# recieve and parse incoming JSON data
+	import datetime
 	data = request.get_json()
 	prodType = data["prodType"].lower()
-	expDate = data["expDate"]
+	expDate = datetime.datetime.strptime(data["expDate"], '%m %d %Y')
 	note = data["note"]
 
 	# Creates new Product object and saves it to database
@@ -240,10 +238,12 @@ def deleteRecipe():
 				recipe.delete()
 				return jsonify(success=True)
 		return jsonify(success=False, message="Invalid ID. Check inventory and make sure ID is correct.")
+	
+def add_cors_headers(response):
+	response.headers['Access-Control-Allow-Origin'] = '*'
+	return response
 
 if __name__ == "__main__":
 
-	# license boilerplate
-	print("GroceryHelper Copyright (C) 2019 Nathan Weinberg\nThis program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.\nThis is free software, and you are welcome to redistribute it\nunder certain conditions; type `show c' for details.\n")
 	
 	app.run(debug=True)
